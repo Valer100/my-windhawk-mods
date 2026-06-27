@@ -1,19 +1,19 @@
 // ==WindhawkMod==
 // @id              disk-usage-bar-customizer
 // @name            Disk Usage Bar Customizer
-// @description     Customize anything about the disk usage bar from the This PC section in the File Explorer, like theme-aware colors, height, border and more.
+// @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
 // @version         1.0.0
 // @author          Valer100
 // @github          https://github.com/Valer100
 // @include         explorer.exe
-// @compilerOptions -luxtheme -lmsimg32 -lgdi32
+// @compilerOptions -luxtheme -lgdi32
 // ==/WindhawkMod==
 
 
 // ==WindhawkModReadme==
 /*
 # Disk Usage Bar Customizer
-Customize anything about the disk usage bar from the This PC section in the File Explorer, like theme-aware colors, height, border and more.
+Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
 
 This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
 
@@ -95,7 +95,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
   - useSystemAccentColor: false
     $name: Use system's accent color for the normal progress color
     $description: >-
-      Use system's accent color for the normal progress color. Not appliable when "Adapt to system's theme" is disabled.
+      Use system's accent color for the normal progress color.
 
   - renderBarBorder: true
     $name: Render bar border
@@ -213,7 +213,6 @@ static COLORREF LoadColorSetting(PCWSTR colorName, COLORREF fallback) {
     PCWSTR originalHexString = Wh_GetStringSetting(colorName);
     PCWSTR hexString = originalHexString;
 
-    if (!hexString) return fallback;
     if (hexString[0] == L'#') hexString++;
 
     if (wcslen(hexString) != 6) {
@@ -304,20 +303,14 @@ static COLORREF GetSystemAccentColorShade(int shade) {
 HRESULT WINAPI HookedDrawThemeBackground(
     HTHEME hTheme, HDC hdc, INT iPartId, INT iStateId, LPCRECT pRect, LPCRECT pClipRect
 ) {
-    HMODULE callerModule = nullptr;
-    void* caller = __builtin_return_address(0);
+    WCHAR themeClass[256] = {};
 
-    WCHAR themeClass[256];
-    if (GetThemeClass) GetThemeClass(hTheme, themeClass, 256);
+    BOOL isThemeClassValid = (
+        GetThemeClass && SUCCEEDED(GetThemeClass(hTheme, themeClass, 256)) 
+        && wcscmp(themeClass, L"Progress") == 0
+    );
 
     BOOL isRectValid = pRect && pRect->left > 0;
-
-    BOOL isCallerShell32 = GetModuleHandleEx(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, 
-        reinterpret_cast<LPCWSTR>(caller), &callerModule
-    ) && callerModule == g_shell32;
-
-    BOOL isThemeClassValid = GetThemeClass && wcscmp(themeClass, L"Progress") == 0;
 
     // I know `isRectValid` and `isCallerShell32` are some really weird checks,
     // but I have no idea for a better check that actually works and that can 
@@ -326,16 +319,27 @@ HRESULT WINAPI HookedDrawThemeBackground(
     // From my inspection, Explorer seems to custom draw a progress bar like 
     // this only inside the drive list from the This PC section.
 
-    if (isRectValid && isCallerShell32 && isThemeClassValid) {
+    if (isRectValid && isThemeClassValid) {
+        HMODULE callerModule = nullptr;
+        void* caller = __builtin_return_address(0);
+
+        BOOL isCallerShell32 = GetModuleHandleEx(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, 
+            reinterpret_cast<LPCWSTR>(caller), &callerModule
+        ) && callerModule == g_shell32;
+
+        if (!isCallerShell32)
+            return DrawThemeBackground_orig(hTheme, hdc, iPartId, iStateId, pRect, pClipRect);
+
         COLORREF color;
         HBRUSH colorBrush;
         RECT clipRect = *pRect;
         BOOL darkMode = AreAppsUsingDarkTheme();
 
-        if (g_darkModeVSRendering && darkMode && g_darkHTheme) 
-            hTheme = g_darkHTheme;
-
         if (pClipRect) IntersectRect(&clipRect, &clipRect, pClipRect);
+
+        if (g_renderUsingVisualStyles && g_darkModeVSRendering && darkMode && g_darkHTheme) 
+            hTheme = g_darkHTheme;
 
         if (!g_renderUsingVisualStyles) {
             int inset = (clipRect.bottom - clipRect.top) * (100 - g_heightFactor) / 200;
