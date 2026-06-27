@@ -36,29 +36,29 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 
 ## Screenshots
 ### Colors adapting to the system's theme
-![System colors light mode](https://i.imgur.com/LWSfmeF.png)
+![System colors light mode](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/light_mode_default.png)
 
-![System colors dark mode](https://i.imgur.com/JU3PKjD.png)
+![System colors dark mode](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/dark_mode_default.png)
 
 ### Accent color as the normal progress color
-![Accent color light mode](https://i.imgur.com/YjZaaij.png)
+![Accent color light mode](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/light_mode_accent.png)
 
-![Accent color dark mode](https://i.imgur.com/3oxqdh6.png)
+![Accent color dark mode](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/dark_mode_accent.png)
 
 ### Custom colors
-![Custom colors](https://i.imgur.com/dD6Pa1h.png)
+![Custom colors](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_colors.png)
 
 ### No border
-![No border](https://i.imgur.com/nFQZQxL.png)
+![No border](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_colors_no_border.png)
 
 ### Custom height
-![Custom height](https://i.imgur.com/wUAUAcu.png)
+![Custom height](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_height.png)
 
 ### Custom warning threshold
-![Custom warning threshold](https://i.imgur.com/453a2Hs.png)
+![Custom warning threshold](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_warning_threshold.png)
 
 ### Show remaining space as progress instead of used space
-![Show remaining space as progress instead of used space](https://i.imgur.com/t53p6Jb.png)
+![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
 */
 // ==/WindhawkModReadme==
 
