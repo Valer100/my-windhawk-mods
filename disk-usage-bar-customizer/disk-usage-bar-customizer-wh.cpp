@@ -162,6 +162,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 
 #include <windhawk_utils.h>
 #include <uxtheme.h>
+#include <vsstyle.h>
 #include <versionhelpers.h>
 
 // Undocumented functions
@@ -303,6 +304,16 @@ static COLORREF GetSystemAccentColorShade(int shade) {
 HRESULT WINAPI HookedDrawThemeBackground(
     HTHEME hTheme, HDC hdc, INT iPartId, INT iStateId, LPCRECT pRect, LPCRECT pClipRect
 ) {
+    // I know the rect left point and shell32 caller checks are some really 
+    // weird checks, but I have no idea for a better check that actually works 
+    // and that can actually distinguish from Explorer's progress bar drawing 
+    // inside an item from This PC's drive list and an actual progress bar 
+    // control drawing. From my inspection, Explorer seems to custom draw a 
+    // progress bar like this only inside the drive list from the This PC section.
+
+    if ((iPartId != PP_FILL && iPartId != PP_TRANSPARENTBAR) || !pRect || pRect->left <= 0)
+        return DrawThemeBackground_orig(hTheme, hdc, iPartId, iStateId, pRect, pClipRect);
+
     WCHAR themeClass[256] = {};
 
     BOOL isThemeClassValid = (
@@ -310,16 +321,7 @@ HRESULT WINAPI HookedDrawThemeBackground(
         && wcscmp(themeClass, L"Progress") == 0
     );
 
-    BOOL isRectValid = pRect && pRect->left > 0;
-
-    // I know `isRectValid` and `isCallerShell32` are some really weird checks,
-    // but I have no idea for a better check that actually works and that can 
-    // actually distinguish from Explorer's progress bar drawing inside an item
-    // from This PC's drive list and an actual progress bar control drawing. 
-    // From my inspection, Explorer seems to custom draw a progress bar like 
-    // this only inside the drive list from the This PC section.
-
-    if (isRectValid && isThemeClassValid) {
+    if (isThemeClassValid) {
         HMODULE callerModule = nullptr;
         void* caller = __builtin_return_address(0);
 
@@ -348,7 +350,7 @@ HRESULT WINAPI HookedDrawThemeBackground(
             clipRect.bottom = clipRect.bottom - inset;
         }
 
-        if (iPartId == 5) {
+        if (iPartId == PP_FILL) {
             int progressWidth = clipRect.right - clipRect.left;
             int usedPercentage = progressWidth * 100 / g_barWidth;
 
@@ -357,10 +359,11 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
             if (g_renderUsingVisualStyles)
                 DrawThemeBackground_orig(
-                    hTheme, hdc, 5, (usedPercentage >= g_warningThreshold) ? 2 : 4, &clipRect, 0
+                    hTheme, hdc, PP_FILL, (usedPercentage >= g_warningThreshold) ? PBFS_ERROR : PBFS_PARTIAL, 
+                    &clipRect, 0
                 );
             else {
-                if (iStateId == 2 || iStateId == 4) 
+                if (iStateId == PBFS_ERROR || iStateId == PBFS_PARTIAL) 
                     if (usedPercentage >= g_warningThreshold) {
                         color = (darkMode) ? g_progressColorFullDark : g_progressColorFullLight;
                     } else {
@@ -390,11 +393,11 @@ HRESULT WINAPI HookedDrawThemeBackground(
             return S_OK;
         }
 
-        else if (iPartId == 11) {
+        else if (iPartId == PP_TRANSPARENTBAR) {
             g_barWidth = clipRect.right - clipRect.left;
  
             if (g_renderUsingVisualStyles)
-                DrawThemeBackground_orig(hTheme, hdc, 11, 1, &clipRect, 0);
+                DrawThemeBackground_orig(hTheme, hdc, PP_TRANSPARENTBAR, PBS_NORMAL, &clipRect, 0);
             else {
                 if (g_renderBarBorder) {
                     colorBrush = CreateSolidBrush((darkMode) ? g_barBorderColorDark : g_barBorderColorLight);
@@ -420,9 +423,15 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
 
 static BOOL CALLBACK RefreshExplorerCallback(HWND hwnd, LPARAM lParam) {
+    DWORD pid;
     WCHAR windowClass[256];
 
-    if (GetClassName(hwnd, windowClass, 256) && wcscmp(windowClass, L"CabinetWClass") == 0)
+    GetWindowThreadProcessId(hwnd, &pid); 
+
+    if (
+        pid == GetCurrentProcessId() && GetClassName(hwnd, windowClass, 256) 
+        && wcscmp(windowClass, L"CabinetWClass") == 0
+    )
         SendMessage(hwnd, WM_SETTINGCHANGE, SPI_SETHIGHCONTRAST, 0);
     
     return TRUE;
