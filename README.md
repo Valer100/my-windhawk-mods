@@ -4,4 +4,4 @@ Added Features:
 1. Customisable Rounded Usage bars
 2. Disk usage % overlay
 <br>
-Bumped up the version to 1.0.0
+Bumped up the version to 1.1.0
