@@ -31,7 +31,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 - Use system's accent color for the normal progress color
 - Render bar border
 - Height factor
-- Corner radius factor (square corners up to fully rounded/pill-shaped ends)
+- Corner radius factor
 - Custom light & dark mode colors
 
 ### Percentage label
