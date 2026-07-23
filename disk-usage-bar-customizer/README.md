@@ -47,7 +47,7 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
 
 ### Rounded corners
-![Rounded corners]()
+![Rounded corners](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/rounded_corners.png)
 
-### % overlay
-![Percentage Overlay]()
+### Percentage overlay
+![Percentage Overlay](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/percentage_overlay.png)
