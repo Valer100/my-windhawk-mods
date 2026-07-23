@@ -1,13 +1,12 @@
 # Disk Usage Bar Customizer
 Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
 
-This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
-
 
 ## Customization options
 ### General
 - Show remaining space as progress instead of used space
 - Custom warning percentage threshold
+- Disk usage % overlay
 
 ### Rendering
 - Render using visual styles
@@ -18,6 +17,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 - Render bar border
 - Height factor
 - Custom light & dark mode colors
+- Rounded corners
 
 
 ## Screenshots
