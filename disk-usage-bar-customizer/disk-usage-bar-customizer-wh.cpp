@@ -1,8 +1,8 @@
 // ==WindhawkMod==
 // @id              disk-usage-bar-customizer
 // @name            Disk Usage Bar Customizer
-// @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
-// @version         1.2.0
+// @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
+// @version         1.1.0
 // @author          Valer100
 // @github          https://github.com/Valer100
 // @include         explorer.exe
@@ -14,6 +14,8 @@
 /*
 # Disk Usage Bar Customizer
 Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
+
+This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
 
 
 ## Customization options
@@ -29,7 +31,7 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 - Use system's accent color for the normal progress color
 - Render bar border
 - Height factor
-- Corner radius factor 
+- Corner radius 
 - Percentage label overlay 
 - Custom light & dark mode colors
 
@@ -59,6 +61,12 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 
 ### Show remaining space as progress instead of used space
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
+
+### Rounded corners
+![Rounded corners](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/rounded_corners.png)
+
+### Percentage overlay
+![Percentage overlay](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/percentage_overlay.png)
 */
 // ==/WindhawkModReadme==
 
@@ -110,21 +118,17 @@ Customize everything about the disk usage bar from the This PC section in the Fi
     $description: >-
       A factor that determines how rounded the bar's corners are (in percents; default: 0%). 0% keeps square corners, 100% results in fully rounded, pill-shaped ends. The progress fill's leading edge stays square until the drive is completely full, matching how the bar's background rounds off.
 
-  - showPercentageLabel: false
-    $name: Show percentage label
+  - percentageLabel: dontShow
+    $name: Percentage label
     $description: >-
-      Overlay a percentage label centered on the bar itself.
-
-  - labelMode: used
-    $name: Label content
-    $description: >-
-      Whether the label shows the percentage of used or free space.
+      Show a label indicating the percentage of used or free space.
     $options:
-    - used: Used space
-    - free: Free space
+    - dontShow: Don't show
+    - usedSpace: Show used space
+    - freeSpace: Show free space
 
-  - labelFontSizeFactor: 70
-    $name: Label font size factor
+  - percentageLabelFontSizeFactor: 70
+    $name: Percentage label font size factor
     $description: >-
       Font size as a factor of the bar's height (in percents; default: 70%). This is independent of the "Height factor" setting, so the label stays legible even if the bar itself is shrunk thin.
 
@@ -150,8 +154,8 @@ Customize everything about the disk usage bar from the This PC section in the Fi
       $description: >-
         Hex color code for the bar progress when a drive is nearly full (default: #C42B1C).
 
-    - labelColor: "#000000"
-      $name: Label color
+    - percentageLabelColor: "#000000"
+      $name: Percentage label color
       $description: >-
         Hex color code for the percentage label text in light mode (default: #000000). Only applies when "Show percentage label" is enabled.
   
@@ -179,8 +183,8 @@ Customize everything about the disk usage bar from the This PC section in the Fi
       $description: >-
         Hex color code for the bar progress when a drive is nearly full (default: #FF3D53).
 
-    - labelColor: "#FFFFFF"
-      $name: Label color
+    - percentageLabelColor: "#FFFFFF"
+      $name: Percentage label color
       $description: >-
         Hex color code for the percentage label text in dark mode (default: #FFFFFF). Only applies when "Show percentage label" is enabled.
   
@@ -215,35 +219,34 @@ static decltype(&DrawThemeBackground) DrawThemeBackground_orig = nullptr;
 
 
 // General
-static BOOL     g_remainingSpaceAsProgress = FALSE;
-static INT      g_warningThreshold         = 90;
+static BOOL     g_remainingSpaceAsProgress  = FALSE;
+static INT      g_warningThreshold          = 90;
 
 // Rendering
-static BOOL     g_renderUsingVisualStyles  = FALSE;
-static BOOL     g_darkModeVSRendering      = TRUE;
+static BOOL     g_renderUsingVisualStyles   = FALSE;
+static BOOL     g_darkModeVSRendering       = TRUE;
 
 // Custom rendering
-static BOOL     g_useSystemAccentColor     = FALSE;
-static BOOL     g_renderBarBorder          = TRUE;
-static INT      g_heightFactor             = 100;
-static INT      g_cornerRadiusFactor       = 0;
-static BOOL     g_showPercentageLabel      = FALSE;
-static BOOL     g_labelModeFree            = FALSE;
-static INT      g_labelFontSizeFactor      = 70;
+static BOOL     g_useSystemAccentColor      = FALSE;
+static BOOL     g_renderBarBorder           = TRUE;
+static INT      g_heightFactor              = 100;
+static INT      g_cornerRadiusFactor        = 0;
+static INT      g_percentageLabel           = 0;
+static INT      g_percentageLabelSize       = 70;
 
 // Light mode colors
-static COLORREF g_barColorLight            = 0x00E6E6E6;
-static COLORREF g_barBorderColorLight      = 0x00BCBCBC;
-static COLORREF g_progressColorNormalLight = 0x00CB7000;
-static COLORREF g_progressColorFullLight   = 0x001C2BC4;
-static COLORREF g_labelColorLight          = 0x00000000;
+static COLORREF g_barColorLight             = 0x00E6E6E6;
+static COLORREF g_barBorderColorLight       = 0x00BCBCBC;
+static COLORREF g_progressColorNormalLight  = 0x00CB7000;
+static COLORREF g_progressColorFullLight    = 0x001C2BC4;
+static COLORREF g_percentagelabelColorLight = 0x00000000;
 
 // Dark mode colors
-static COLORREF g_barColorDark             = 0x00383838;
-static COLORREF g_barBorderColorDark       = 0x00646464;
-static COLORREF g_progressColorNormalDark  = 0x00FFCD60;
-static COLORREF g_progressColorFullDark    = 0x00533DFF;
-static COLORREF g_labelColorDark           = 0x00FFFFFF;
+static COLORREF g_barColorDark              = 0x00383838;
+static COLORREF g_barBorderColorDark        = 0x00646464;
+static COLORREF g_progressColorNormalDark   = 0x00FFCD60;
+static COLORREF g_progressColorFullDark     = 0x00533DFF;
+static COLORREF g_percentageLabelColorDark  = 0x00FFFFFF;
 
 // Other
 thread_local int g_barWidth  = 1;
@@ -251,6 +254,7 @@ thread_local int g_barLeft   = 0;
 thread_local int g_barRight  = 0;
 thread_local int g_barTop    = 0;
 thread_local int g_barBottom = 0;
+
 static ULONG_PTR g_gdiplusToken = 0;
 HTHEME g_darkHTheme = nullptr;
 HMODULE g_uxtheme = nullptr;
@@ -306,8 +310,18 @@ static void LoadSettings() {
     g_renderBarBorder          = Wh_GetIntSetting(L"customRendering.renderBarBorder");
     g_heightFactor             = Wh_GetIntSetting(L"customRendering.heightFactor");
     g_cornerRadiusFactor       = Wh_GetIntSetting(L"customRendering.cornerRadiusFactor");
-    g_showPercentageLabel      = Wh_GetIntSetting(L"customRendering.showPercentageLabel");
-    g_labelFontSizeFactor      = Wh_GetIntSetting(L"customRendering.labelFontSizeFactor");
+    g_percentageLabelSize      = Wh_GetIntSetting(L"customRendering.percentageLabelFontSizeFactor");
+
+    PCWSTR percentageLabelMode = Wh_GetStringSetting(L"customRendering.percentageLabel");
+    
+    if (wcscmp(percentageLabelMode, L"usedSpace") == 0)
+        g_percentageLabel = 1;
+    else if (wcscmp(percentageLabelMode, L"freeSpace") == 0)
+        g_percentageLabel = 2;
+    else
+        g_percentageLabel = 0;
+
+    Wh_FreeStringSetting(percentageLabelMode);
 
     if (g_heightFactor > 100) g_heightFactor = 100;
     else if (g_heightFactor < 0) g_heightFactor = 0;
@@ -315,26 +329,22 @@ static void LoadSettings() {
     if (g_cornerRadiusFactor > 100) g_cornerRadiusFactor = 100;
     else if (g_cornerRadiusFactor < 0) g_cornerRadiusFactor = 0;
 
-    if (g_labelFontSizeFactor > 100) g_labelFontSizeFactor = 100;
-    else if (g_labelFontSizeFactor < 1) g_labelFontSizeFactor = 1;
-
-    PCWSTR labelMode = Wh_GetStringSetting(L"customRendering.labelMode");
-    g_labelModeFree = (wcscmp(labelMode, L"free") == 0);
-    Wh_FreeStringSetting(labelMode);
+    if (g_percentageLabelSize > 100) g_percentageLabelSize = 100;
+    else if (g_percentageLabelSize < 1) g_percentageLabelSize = 1;
 
     // Light mode colors
-    g_barColorLight            = LoadColorSetting(L"customRendering.lightModeColors.barColor",            0x00E6E6E6);
-    g_barBorderColorLight      = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",      0x00BCBCBC);
-    g_progressColorNormalLight = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal", 0x00CB7000);
-    g_progressColorFullLight   = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",   0x001C2BC4);
-    g_labelColorLight          = LoadColorSetting(L"customRendering.lightModeColors.labelColor",          0x00000000);
+    g_barColorLight             = LoadColorSetting(L"customRendering.lightModeColors.barColor",             0x00E6E6E6);
+    g_barBorderColorLight       = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",       0x00BCBCBC);
+    g_progressColorNormalLight  = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal",  0x00CB7000);
+    g_progressColorFullLight    = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",    0x001C2BC4);
+    g_percentagelabelColorLight = LoadColorSetting(L"customRendering.lightModeColors.percentageLabelColor", 0x00000000);
 
     // Dark mode colors
-    g_barColorDark            = LoadColorSetting(L"customRendering.darkModeColors.barColor",              0x00383838);
-    g_barBorderColorDark      = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",        0x00646464);
-    g_progressColorNormalDark = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",   0x00FFCD60);
-    g_progressColorFullDark   = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",     0x00533DFF);
-    g_labelColorDark          = LoadColorSetting(L"customRendering.darkModeColors.labelColor",            0x00FFFFFF);
+    g_barColorDark              = LoadColorSetting(L"customRendering.darkModeColors.barColor",               0x00383838);
+    g_barBorderColorDark        = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",         0x00646464);
+    g_progressColorNormalDark   = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",    0x00FFCD60);
+    g_progressColorFullDark     = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",      0x00533DFF);
+    g_percentageLabelColorDark  = LoadColorSetting(L"customRendering.darkModeColors.percentageLabelColor",   0x00FFFFFF);
 }
 
 
@@ -363,27 +373,15 @@ static COLORREF GetSystemAccentColorShade(int shade) {
 }
 
 
-// Computes the corner radius (in pixels) to use for a rect of the given
-// height, based on the configured corner radius factor. A factor of 100%
-// yields a fully rounded (pill-shaped) end for the rect's height.
 static int GetCornerRadius(const RECT& rect) {
     int height = rect.bottom - rect.top;
     if (height <= 0 || g_cornerRadiusFactor <= 0) return 0;
 
-    // Round to the nearest pixel instead of truncating, and guarantee any
-    // nonzero factor produces at least a 1px radius - otherwise low factor
-    // values on a thin bar silently truncate to 0 and look identical to
-    // "disabled", which is confusing.
     int radius = ((height / 2) * g_cornerRadiusFactor + 50) / 100;
     return (radius < 1) ? 1 : radius;
 }
 
 
-// Fills a rect with the given color, optionally rounding its left and/or
-// right corners, using GDI+ so the rounded corners are anti-aliased (plain
-// GDI's RoundRect produces jagged corners). When a side isn't rounded, the
-// rounded-corner region on that side is overdrawn with a flat-edged
-// GDI+ rectangle of the same color to square it off.
 static void FillRoundedRect(
     HDC hdc, const RECT& rect, int radius, COLORREF color, bool roundLeft, bool roundRight
 ) {
@@ -391,6 +389,7 @@ static void FillRoundedRect(
 
     Graphics graphics(hdc);
     graphics.SetSmoothingMode(SmoothingModeAntiAlias);
+    graphics.SetPixelOffsetMode(PixelOffsetModeHighQuality);
 
     SolidBrush brush(Color(255, GetRValue(color), GetGValue(color), GetBValue(color)));
 
@@ -421,29 +420,22 @@ static void FillRoundedRect(
 }
 
 
-// Draws a "<percentage>%" label centered within the given rect, in a font
-// sized relative to fontRefHeight (the bar's default, un-shrunk height -
-// kept separate from rect's height so the label stays legible even when
-// the bar itself has been shrunk via the height factor setting). Uses
-// transparent background so it composites over whatever was already drawn
-// underneath (track + fill).
-static void DrawPercentageLabel(HDC hdc, const RECT& rect, int fontRefHeight, int percentage, BOOL darkMode) {
-    if (rect.right <= rect.left) return;
-
-    int fontHeight = -(fontRefHeight * g_labelFontSizeFactor / 100);
+static void DrawPercentageLabel(
+    HDC hdc, const RECT& rect, int fontRefHeight, int percentage, BOOL darkMode
+) {
+    int fontHeight = -(fontRefHeight * g_percentageLabelSize / 100);
     if (fontHeight == 0) return;
 
     HFONT font = CreateFontW(
-        fontHeight, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+        fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, 
+        DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
     );
 
     if (!font) return;
 
     HGDIOBJ oldFont = SelectObject(hdc, font);
-    int oldBkMode = SetBkMode(hdc, TRANSPARENT);
-    COLORREF oldColor = SetTextColor(hdc, (darkMode) ? g_labelColorDark : g_labelColorLight);
+    COLORREF oldColor = SetTextColor(hdc, (darkMode) ? g_percentageLabelColorDark : g_percentagelabelColorLight);
 
     WCHAR text[16];
     swprintf(text, 16, L"%d%%", percentage);
@@ -452,7 +444,6 @@ static void DrawPercentageLabel(HDC hdc, const RECT& rect, int fontRefHeight, in
     DrawTextW(hdc, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
 
     SetTextColor(hdc, oldColor);
-    SetBkMode(hdc, oldBkMode);
     SelectObject(hdc, oldFont);
     DeleteObject(font);
 }
@@ -499,8 +490,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
         if (g_renderUsingVisualStyles && g_darkModeVSRendering && darkMode && g_darkHTheme) 
             hTheme = g_darkHTheme;
 
-        // Captured before the height factor inset below, so the label font
-        // size stays legible even when the bar itself is shrunk thin.
         int barHeight = clipRect.bottom - clipRect.top;
 
         if (!g_renderUsingVisualStyles) {
@@ -517,10 +506,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
             if (g_remainingSpaceAsProgress)
                 clipRect.right = clipRect.left + g_barWidth - progressWidth;
 
-            // The fill always grows from the container's left edge, so its
-            // left corner should match the track's rounding. Its right
-            // corner should only be rounded once it actually reaches the
-            // container's right edge (i.e. the drive is completely full).
             bool roundLeft = (clipRect.left <= g_barLeft);
             bool roundRight = (clipRect.right >= g_barRight);
 
@@ -556,11 +541,13 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
                 FillRoundedRect(hdc, clipRect, radius, color, roundLeft, roundRight);
 
-                if (g_showPercentageLabel) {
+                if (g_percentageLabel) {
                     RECT fullBarRect = { g_barLeft, g_barTop, g_barRight, g_barBottom };
-                    int labelPercentage = (g_labelModeFree) ? (100 - usedPercentage) : usedPercentage;
-
-                    DrawPercentageLabel(hdc, fullBarRect, barHeight, labelPercentage, darkMode);
+                    
+                    DrawPercentageLabel(
+                        hdc, fullBarRect, barHeight, 
+                        (g_percentageLabel == 1) ? usedPercentage : (100 - usedPercentage), darkMode
+                    );
                 }
             }
             
@@ -585,7 +572,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
                     );
 
                     clipRect.top++; clipRect.left++; clipRect.bottom--; clipRect.right--;
-                    if (radius > 0) radius--;
                 }
 
                 FillRoundedRect(hdc, clipRect, radius, (darkMode) ? g_barColorDark : g_barColorLight, true, true);
