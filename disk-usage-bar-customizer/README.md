@@ -6,7 +6,6 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 ### General
 - Show remaining space as progress instead of used space
 - Custom warning percentage threshold
-- Disk usage % overlay
 
 ### Rendering
 - Render using visual styles
@@ -18,6 +17,7 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 - Height factor
 - Custom light & dark mode colors
 - Rounded corners
+- Percentage label overlay
 
 
 ## Screenshots
@@ -45,3 +45,9 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 
 ### Show remaining space as progress instead of used space
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
+
+### Rounded corners
+![Rounded corners]()
+
+### % overlay
+![Percentage Overlay]()
