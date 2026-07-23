@@ -421,7 +421,7 @@ static void FillRoundedRect(
 
 
 static void DrawPercentageLabel(
-    HDC hdc, const RECT& rect, int fontRefHeight, int percentage, BOOL darkMode
+    HDC hdc, RECT &rect, int fontRefHeight, int percentage, COLORREF color
 ) {
     int fontHeight = -(fontRefHeight * g_percentageLabelSize / 100);
     if (fontHeight == 0) return;
@@ -434,17 +434,13 @@ static void DrawPercentageLabel(
 
     if (!font) return;
 
-    HGDIOBJ oldFont = SelectObject(hdc, font);
-    COLORREF oldColor = SetTextColor(hdc, (darkMode) ? g_percentageLabelColorDark : g_percentagelabelColorLight);
-
     WCHAR text[16];
     swprintf(text, 16, L"%d%%", percentage);
 
-    RECT textRect = rect;
-    DrawTextW(hdc, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
+    SetTextColor(hdc, color);
+    DrawTextW(hdc, text, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
 
-    SetTextColor(hdc, oldColor);
-    SelectObject(hdc, oldFont);
+    SelectObject(hdc, font);
     DeleteObject(font);
 }
 
@@ -546,7 +542,8 @@ HRESULT WINAPI HookedDrawThemeBackground(
                     
                     DrawPercentageLabel(
                         hdc, fullBarRect, barHeight, 
-                        (g_percentageLabel == 1) ? usedPercentage : (100 - usedPercentage), darkMode
+                        (g_percentageLabel == 1) ? usedPercentage : (100 - usedPercentage),
+                        (darkMode) ? g_percentageLabelColorDark : g_percentagelabelColorLight
                     );
                 }
             }
