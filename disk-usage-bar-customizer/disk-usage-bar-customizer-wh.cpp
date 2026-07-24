@@ -120,7 +120,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
     $description: >-
       Render the usage bar using the dark mode parts from the "DarkMode_CopyEngine::Progress" class when dark mode is enabled. You must have Windows 11 build 26200.6899 or higher installed and the "Render using visual styles" option enabled for this to work.
     $description:ro: >-
-      Randează bara de utilizare folosind părți întunecate din clasa "DarkMode_CopyEngine::Progress" atunci când modul întunecat este activat. Trebuie să ai instalat Windows 11, build-ul 26100.6899 sau mai recent și opțiunea "Randează folosind stiluri vizuale" activată pentru ca această opțiune să funcționeze.
+      Randează bara de utilizare folosind părți întunecate din clasa "DarkMode_CopyEngine::Progress" atunci când modul întunecat este activat. Trebuie să ai instalat Windows 11, build-ul 26200.6899 sau mai recent și opțiunea "Randează folosind stiluri vizuale" activată pentru ca această opțiune să funcționeze.
 
   $name: Rendering
   $name:ro: Randare
@@ -480,8 +480,6 @@ static void DrawPercentageLabel(
 ) {
     if (fontHeight == 0) return;
 
-    Wh_Log(L"%d", fontHeight);
-
     HFONT font = CreateFontW(
         fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, 
@@ -534,6 +532,7 @@ HRESULT WINAPI HookedDrawThemeBackground(
             return DrawThemeBackground_orig(hTheme, hdc, iPartId, iStateId, pRect, pClipRect);
 
         COLORREF color;
+        INT progressStyle;
         RECT clipRect = *pRect;
         BOOL darkMode = AreAppsUsingDarkTheme();
 
@@ -563,12 +562,16 @@ HRESULT WINAPI HookedDrawThemeBackground(
             if (g_remainingSpaceAsProgress)
                 clipRect.right = clipRect.left + g_barWidth - progressWidth;
 
-            if (g_renderUsingVisualStyles)
-                DrawThemeBackground_orig(
-                    hTheme, hdc, PP_FILL, (usedPercentage >= g_warningThreshold) ? PBFS_ERROR : PBFS_PARTIAL, 
-                    &clipRect, 0
-                );
-            else {
+            if (g_renderUsingVisualStyles) {
+                if (usedPercentage >= g_warningThreshold)
+                    progressStyle = PBFS_ERROR;
+                else if (g_intermediateThreshold && usedPercentage >= g_intermediateThreshold)
+                    progressStyle = PBFS_PAUSED;
+                else 
+                    progressStyle = PBFS_NORMAL;
+
+                DrawThemeBackground_orig(hTheme, hdc, PP_FILL, progressStyle, &clipRect, 0);
+            } else {
                 if (iStateId == PBFS_ERROR || iStateId == PBFS_PARTIAL) 
                     if (usedPercentage >= g_warningThreshold) {
                         color = (darkMode) ? g_progressColorFullDark : g_progressColorFullLight;
@@ -600,10 +603,7 @@ HRESULT WINAPI HookedDrawThemeBackground(
                 );
 
                 if (g_percentageLabel) {
-                    LPCWSTR percentageLabelFont = L"Segoe UI Semibold";
-                    percentageLabelFont = Wh_GetStringSetting(L"customRendering.percentageLabelFont");
-
-                    Wh_Log(L"%s", percentageLabelFont);
+                    LPCWSTR percentageLabelFont = Wh_GetStringSetting(L"customRendering.percentageLabelFont");
 
                     DrawPercentageLabel(
                         hdc, fullBarRect, percentageLabelFont, percentageLabelFontHeight, 
@@ -633,6 +633,7 @@ HRESULT WINAPI HookedDrawThemeBackground(
                     );
 
                     clipRect.top++; clipRect.left++; clipRect.bottom--; clipRect.right--;
+                    if (radius > 0) radius--;
                 }
 
                 FillRoundedRect(
