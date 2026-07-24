@@ -1,19 +1,19 @@
 // ==WindhawkMod==
 // @id              disk-usage-bar-customizer
 // @name            Disk Usage Bar Customizer
-// @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
-// @version         1.0.0
+// @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
+// @version         1.1.0
 // @author          Valer100
 // @github          https://github.com/Valer100
 // @include         explorer.exe
-// @compilerOptions -luxtheme -lgdi32
+// @compilerOptions -luxtheme -lgdi32 -lgdiplus
 // ==/WindhawkMod==
 
 
 // ==WindhawkModReadme==
 /*
 # Disk Usage Bar Customizer
-Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
+Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
 
 This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
 
@@ -31,6 +31,8 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 - Use system's accent color for the normal progress color
 - Render bar border
 - Height factor
+- Corner radius 
+- Percentage label overlay 
 - Custom light & dark mode colors
 
 
@@ -59,6 +61,12 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 
 ### Show remaining space as progress instead of used space
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
+
+### Rounded corners
+![Rounded corners](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/rounded_corners.png)
+
+### Percentage overlay
+![Percentage overlay](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/percentage_overlay.png)
 */
 // ==/WindhawkModReadme==
 
@@ -105,6 +113,25 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
     $description: >-
       A factor that determines the height of the usage bar (in percents; default: 100%). The factor cannot be greater than 100%.
 
+  - cornerRadiusFactor: 0
+    $name: Corner radius factor
+    $description: >-
+      A factor that determines how rounded the bar's corners are (in percents; default: 0%). 0% keeps square corners, 100% results in fully rounded, pill-shaped ends. The progress fill's leading edge stays square until the drive is completely full, matching how the bar's background rounds off.
+
+  - percentageLabel: dontShow
+    $name: Percentage label
+    $description: >-
+      Show a label indicating the percentage of used or free space.
+    $options:
+    - dontShow: Don't show
+    - usedSpace: Show used space
+    - freeSpace: Show free space
+
+  - percentageLabelFontSizeFactor: 70
+    $name: Percentage label font size factor
+    $description: >-
+      Font size as a factor of the bar's height (in percents; default: 70%). This is independent of the "Height factor" setting, so the label stays legible even if the bar itself is shrunk thin.
+
 
   - lightModeColors:
     - barColor: "#E6E6E6"
@@ -126,6 +153,11 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
       $name: Full/Warning progress color
       $description: >-
         Hex color code for the bar progress when a drive is nearly full (default: #C42B1C).
+
+    - percentageLabelColor: "#000000"
+      $name: Percentage label color
+      $description: >-
+        Hex color code for the percentage label text in light mode (default: #000000). Only applies when "Show percentage label" is enabled.
   
     $name: Light mode colors
   
@@ -150,6 +182,11 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
       $name: Full/Warning progress color
       $description: >-
         Hex color code for the bar progress when a drive is nearly full (default: #FF3D53).
+
+    - percentageLabelColor: "#FFFFFF"
+      $name: Percentage label color
+      $description: >-
+        Hex color code for the percentage label text in dark mode (default: #FFFFFF). Only applies when "Show percentage label" is enabled.
   
     $name: Dark mode colors
 
@@ -164,6 +201,9 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 #include <uxtheme.h>
 #include <vsstyle.h>
 #include <versionhelpers.h>
+#include <gdiplus.h>
+
+using namespace Gdiplus;
 
 // Undocumented functions
 using fnGetThemeClass                      = HRESULT(WINAPI*)(HTHEME, LPWSTR, INT);
@@ -179,32 +219,43 @@ static decltype(&DrawThemeBackground) DrawThemeBackground_orig = nullptr;
 
 
 // General
-static BOOL     g_remainingSpaceAsProgress = FALSE;
-static INT      g_warningThreshold         = 90;
+static BOOL     g_remainingSpaceAsProgress  = FALSE;
+static INT      g_warningThreshold          = 90;
 
 // Rendering
-static BOOL     g_renderUsingVisualStyles  = FALSE;
-static BOOL     g_darkModeVSRendering      = TRUE;
+static BOOL     g_renderUsingVisualStyles   = FALSE;
+static BOOL     g_darkModeVSRendering       = TRUE;
 
 // Custom rendering
-static BOOL     g_useSystemAccentColor     = FALSE;
-static BOOL     g_renderBarBorder          = TRUE;
-static INT      g_heightFactor             = 100;
+static BOOL     g_useSystemAccentColor      = FALSE;
+static BOOL     g_renderBarBorder           = TRUE;
+static INT      g_heightFactor              = 100;
+static INT      g_cornerRadiusFactor        = 0;
+static INT      g_percentageLabel           = 0;
+static INT      g_percentageLabelSize       = 70;
 
 // Light mode colors
-static COLORREF g_barColorLight            = 0x00E6E6E6;
-static COLORREF g_barBorderColorLight      = 0x00BCBCBC;
-static COLORREF g_progressColorNormalLight = 0x00CB7000;
-static COLORREF g_progressColorFullLight   = 0x001C2BC4;
+static COLORREF g_barColorLight             = 0x00E6E6E6;
+static COLORREF g_barBorderColorLight       = 0x00BCBCBC;
+static COLORREF g_progressColorNormalLight  = 0x00CB7000;
+static COLORREF g_progressColorFullLight    = 0x001C2BC4;
+static COLORREF g_percentagelabelColorLight = 0x00000000;
 
 // Dark mode colors
-static COLORREF g_barColorDark             = 0x00383838;
-static COLORREF g_barBorderColorDark       = 0x00646464;
-static COLORREF g_progressColorNormalDark  = 0x00FFCD60;
-static COLORREF g_progressColorFullDark    = 0x00533DFF;
+static COLORREF g_barColorDark              = 0x00383838;
+static COLORREF g_barBorderColorDark        = 0x00646464;
+static COLORREF g_progressColorNormalDark   = 0x00FFCD60;
+static COLORREF g_progressColorFullDark     = 0x00533DFF;
+static COLORREF g_percentageLabelColorDark  = 0x00FFFFFF;
 
 // Other
-thread_local int g_barWidth = 1;
+thread_local int g_barWidth  = 1;
+thread_local int g_barLeft   = 0;
+thread_local int g_barRight  = 0;
+thread_local int g_barTop    = 0;
+thread_local int g_barBottom = 0;
+
+static ULONG_PTR g_gdiplusToken = 0;
 HTHEME g_darkHTheme = nullptr;
 HMODULE g_uxtheme = nullptr;
 HMODULE g_shell32 = nullptr;
@@ -258,21 +309,42 @@ static void LoadSettings() {
     g_useSystemAccentColor     = Wh_GetIntSetting(L"customRendering.useSystemAccentColor");
     g_renderBarBorder          = Wh_GetIntSetting(L"customRendering.renderBarBorder");
     g_heightFactor             = Wh_GetIntSetting(L"customRendering.heightFactor");
+    g_cornerRadiusFactor       = Wh_GetIntSetting(L"customRendering.cornerRadiusFactor");
+    g_percentageLabelSize      = Wh_GetIntSetting(L"customRendering.percentageLabelFontSizeFactor");
+
+    PCWSTR percentageLabelMode = Wh_GetStringSetting(L"customRendering.percentageLabel");
+    
+    if (wcscmp(percentageLabelMode, L"usedSpace") == 0)
+        g_percentageLabel = 1;
+    else if (wcscmp(percentageLabelMode, L"freeSpace") == 0)
+        g_percentageLabel = 2;
+    else
+        g_percentageLabel = 0;
+
+    Wh_FreeStringSetting(percentageLabelMode);
 
     if (g_heightFactor > 100) g_heightFactor = 100;
     else if (g_heightFactor < 0) g_heightFactor = 0;
 
+    if (g_cornerRadiusFactor > 100) g_cornerRadiusFactor = 100;
+    else if (g_cornerRadiusFactor < 0) g_cornerRadiusFactor = 0;
+
+    if (g_percentageLabelSize > 100) g_percentageLabelSize = 100;
+    else if (g_percentageLabelSize < 1) g_percentageLabelSize = 1;
+
     // Light mode colors
-    g_barColorLight            = LoadColorSetting(L"customRendering.lightModeColors.barColor",            0x00E6E6E6);
-    g_barBorderColorLight      = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",      0x00BCBCBC);
-    g_progressColorNormalLight = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal", 0x00CB7000);
-    g_progressColorFullLight   = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",   0x001C2BC4);
+    g_barColorLight             = LoadColorSetting(L"customRendering.lightModeColors.barColor",             0x00E6E6E6);
+    g_barBorderColorLight       = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",       0x00BCBCBC);
+    g_progressColorNormalLight  = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal",  0x00CB7000);
+    g_progressColorFullLight    = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",    0x001C2BC4);
+    g_percentagelabelColorLight = LoadColorSetting(L"customRendering.lightModeColors.percentageLabelColor", 0x00000000);
 
     // Dark mode colors
-    g_barColorDark            = LoadColorSetting(L"customRendering.darkModeColors.barColor",              0x00383838);
-    g_barBorderColorDark      = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",        0x00646464);
-    g_progressColorNormalDark = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",   0x00FFCD60);
-    g_progressColorFullDark   = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",     0x00533DFF);
+    g_barColorDark              = LoadColorSetting(L"customRendering.darkModeColors.barColor",               0x00383838);
+    g_barBorderColorDark        = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",         0x00646464);
+    g_progressColorNormalDark   = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",    0x00FFCD60);
+    g_progressColorFullDark     = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",      0x00533DFF);
+    g_percentageLabelColorDark  = LoadColorSetting(L"customRendering.darkModeColors.percentageLabelColor",   0x00FFFFFF);
 }
 
 
@@ -298,6 +370,78 @@ static COLORREF GetSystemAccentColorShade(int shade) {
         );
     else
         return 0xFFFF00FF;
+}
+
+
+static int GetCornerRadius(const RECT& rect) {
+    int height = rect.bottom - rect.top;
+    if (height <= 0 || g_cornerRadiusFactor <= 0) return 0;
+
+    int radius = ((height / 2) * g_cornerRadiusFactor + 50) / 100;
+    return (radius < 1) ? 1 : radius;
+}
+
+
+static void FillRoundedRect(
+    HDC hdc, const RECT& rect, int radius, COLORREF color, bool roundLeft, bool roundRight
+) {
+    if (rect.right <= rect.left || rect.bottom <= rect.top) return;
+
+    Graphics graphics(hdc);
+    graphics.SetSmoothingMode(SmoothingModeAntiAlias);
+    graphics.SetPixelOffsetMode(PixelOffsetModeHighQuality);
+
+    SolidBrush brush(Color(255, GetRValue(color), GetGValue(color), GetBValue(color)));
+
+    int width = rect.right - rect.left;
+    int height = rect.bottom - rect.top;
+
+    if (radius <= 0 || (!roundLeft && !roundRight)) {
+        graphics.FillRectangle(&brush, rect.left, rect.top, width, height);
+        return;
+    }
+
+    int diameter = radius * 2;
+
+    GraphicsPath path;
+    path.AddArc(rect.left, rect.top, diameter, diameter, 180, 90);
+    path.AddArc(rect.right - diameter, rect.top, diameter, diameter, 270, 90);
+    path.AddArc(rect.right - diameter, rect.bottom - diameter, diameter, diameter, 0, 90);
+    path.AddArc(rect.left, rect.bottom - diameter, diameter, diameter, 90, 90);
+    path.CloseFigure();
+
+    graphics.FillPath(&brush, &path);
+
+    if (!roundLeft)
+        graphics.FillRectangle(&brush, rect.left, rect.top, radius, height);
+
+    if (!roundRight)
+        graphics.FillRectangle(&brush, rect.right - radius, rect.top, radius, height);
+}
+
+
+static void DrawPercentageLabel(
+    HDC hdc, RECT &rect, int fontRefHeight, int percentage, COLORREF color
+) {
+    int fontHeight = -(fontRefHeight * g_percentageLabelSize / 100);
+    if (fontHeight == 0) return;
+
+    HFONT font = CreateFontW(
+        fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, 
+        DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+    );
+
+    if (!font) return;
+
+    WCHAR text[16];
+    swprintf(text, 16, L"%d%%", percentage);
+
+    SelectObject(hdc, font);
+    SetTextColor(hdc, color);
+    DrawTextW(hdc, text, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
+
+    DeleteObject(font);
 }
 
 
@@ -334,7 +478,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
             return DrawThemeBackground_orig(hTheme, hdc, iPartId, iStateId, pRect, pClipRect);
 
         COLORREF color;
-        HBRUSH colorBrush;
         RECT clipRect = *pRect;
         BOOL darkMode = AreAppsUsingDarkTheme();
 
@@ -342,6 +485,8 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
         if (g_renderUsingVisualStyles && g_darkModeVSRendering && darkMode && g_darkHTheme) 
             hTheme = g_darkHTheme;
+
+        int barHeight = clipRect.bottom - clipRect.top;
 
         if (!g_renderUsingVisualStyles) {
             int inset = (clipRect.bottom - clipRect.top) * (100 - g_heightFactor) / 200;
@@ -356,6 +501,9 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
             if (g_remainingSpaceAsProgress)
                 clipRect.right = clipRect.left + g_barWidth - progressWidth;
+
+            bool roundLeft = (clipRect.left <= g_barLeft);
+            bool roundRight = (clipRect.right >= g_barRight);
 
             if (g_renderUsingVisualStyles)
                 DrawThemeBackground_orig(
@@ -380,38 +528,50 @@ HRESULT WINAPI HookedDrawThemeBackground(
                 else 
                     return DrawThemeBackground_orig(hTheme, hdc, iPartId, iStateId, pRect, pClipRect);
 
+                int radius = GetCornerRadius(clipRect);
+
                 if (g_renderBarBorder) {
                     clipRect.top++; clipRect.left++; clipRect.bottom--; clipRect.right--;
+                    if (radius > 0) radius--;
                 }
 
-                colorBrush = CreateSolidBrush(color);
+                FillRoundedRect(hdc, clipRect, radius, color, roundLeft, roundRight);
 
-                FillRect(hdc, &clipRect, colorBrush);
-                DeleteObject(colorBrush);
+                if (g_percentageLabel) {
+                    RECT fullBarRect = { g_barLeft, g_barTop, g_barRight, g_barBottom };
+                    
+                    DrawPercentageLabel(
+                        hdc, fullBarRect, barHeight, 
+                        (g_percentageLabel == 1) ? usedPercentage : (100 - usedPercentage),
+                        (darkMode) ? g_percentageLabelColorDark : g_percentagelabelColorLight
+                    );
+                }
             }
             
             return S_OK;
         }
 
         else if (iPartId == PP_TRANSPARENTBAR) {
-            g_barWidth = clipRect.right - clipRect.left;
+            g_barWidth  = clipRect.right - clipRect.left;
+            g_barLeft   = clipRect.left;
+            g_barRight  = clipRect.right;
+            g_barTop    = clipRect.top;
+            g_barBottom = clipRect.bottom;
  
             if (g_renderUsingVisualStyles)
                 DrawThemeBackground_orig(hTheme, hdc, PP_TRANSPARENTBAR, PBS_NORMAL, &clipRect, 0);
             else {
-                if (g_renderBarBorder) {
-                    colorBrush = CreateSolidBrush((darkMode) ? g_barBorderColorDark : g_barBorderColorLight);
+                int radius = GetCornerRadius(clipRect);
 
-                    FillRect(hdc, &clipRect, colorBrush);
-                    DeleteObject(colorBrush);
-                    
+                if (g_renderBarBorder) {
+                    FillRoundedRect(
+                        hdc, clipRect, radius, (darkMode) ? g_barBorderColorDark : g_barBorderColorLight, true, true
+                    );
+
                     clipRect.top++; clipRect.left++; clipRect.bottom--; clipRect.right--;
                 }
 
-                colorBrush = CreateSolidBrush((darkMode) ? g_barColorDark : g_barColorLight);
-
-                FillRect(hdc, &clipRect, colorBrush);
-                DeleteObject(colorBrush);
+                FillRoundedRect(hdc, clipRect, radius, (darkMode) ? g_barColorDark : g_barColorLight, true, true);
             }
             
             return S_OK;
@@ -439,6 +599,9 @@ static BOOL CALLBACK RefreshExplorerCallback(HWND hwnd, LPARAM lParam) {
 
 
 BOOL Wh_ModInit() {
+    GdiplusStartupInput gdiplusStartupInput;
+    GdiplusStartup(&g_gdiplusToken, &gdiplusStartupInput, nullptr);
+
     g_shell32 = GetModuleHandle(L"shell32.dll");
     g_uxtheme = GetModuleHandle(L"uxtheme.dll");
 
@@ -460,6 +623,11 @@ void Wh_ModUninit() {
     if (g_darkHTheme) CloseThemeData(g_darkHTheme);
 
     EnumWindows(RefreshExplorerCallback, 0);
+
+    if (g_gdiplusToken) {
+        GdiplusShutdown(g_gdiplusToken);
+        g_gdiplusToken = 0;
+    }
 }
 
 
