@@ -19,6 +19,8 @@ Customize everything about the disk usage bar from the This PC section in the Fi
 
 This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
 
+**Warning:** This mod is not compatible with StartAllBack.
+
 
 ## Customization options
 ### General
@@ -149,6 +151,10 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
     $description:ro: >-
       Un factor care determină cât de rotunjite sunt colțurile barei (în procente; prestabilit: 0%). Factorul nu poate să fie mai mare de 100%.
 
+  - roundProgressRightCorners: true
+    $name: Round progress' right corners
+    $name:ro: Rotunjește colțurile din dreapta ale progresului
+
   - percentageLabel: dontShow
     $name: Percentage label
     $name:ro: Etichetă pentru procentaj
@@ -158,13 +164,18 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
       Afișează o etichetă pe bara de utilizare care indică procentul spațiului utilizat sau rămas.
     $options:
     - dontShow: Don't show
-    - dontShow:ro: Nu afișa
     - usedSpace: Show used space
-    - usedSpace:ro: Afișează spațiul utilizat
     - freeSpace: Show free space
-    - freeSpace:ro: Afișează spațiul rămas
+    $options:ro:
+    - dontShow: Nu afișa
+    - usedSpace: Afișează spațiul utilizat
+    - freeSpace: Afișează spațiul rămas
 
-  - percentageLabelFontSizeFactor: 70
+  - percentageLabelFont: Segoe UI Semibold
+    $name: Percentage label font
+    $name:ro: Fontul etichetei pentru procentaj
+
+  - percentageLabelSize: 70
     $name: Percentage label font size factor
     $name:ro: Factor de dimensiune a fontului etichetei pentru procentaj
     $description: >-
@@ -275,6 +286,7 @@ static BOOL     g_useSystemAccentColor           = FALSE;
 static BOOL     g_renderBarBorder                = TRUE;
 static INT      g_heightFactor                   = 100;
 static INT      g_cornerRadiusFactor             = 0;
+static BOOL     g_roundProgressRightCorners      = TRUE;
 static INT      g_percentageLabel                = 0;
 static INT      g_percentageLabelSize            = 70;
 
@@ -296,10 +308,6 @@ static COLORREF g_percentageLabelColorDark       = 0x00FFFFFF;
 
 // Other
 thread_local int g_barWidth  = 1;
-thread_local int g_barLeft   = 0;
-thread_local int g_barRight  = 0;
-thread_local int g_barTop    = 0;
-thread_local int g_barBottom = 0;
 
 static ULONG_PTR g_gdiplusToken = 0;
 HTHEME g_darkHTheme = nullptr;
@@ -357,16 +365,14 @@ static void LoadSettings() {
     g_renderBarBorder                = Wh_GetIntSetting(L"customRendering.renderBarBorder");
     g_heightFactor                   = Wh_GetIntSetting(L"customRendering.heightFactor");
     g_cornerRadiusFactor             = Wh_GetIntSetting(L"customRendering.cornerRadiusFactor");
-    g_percentageLabelSize            = Wh_GetIntSetting(L"customRendering.percentageLabelFontSizeFactor");
+    g_roundProgressRightCorners      = Wh_GetIntSetting(L"customRendering.roundProgressRightCorners");
+    g_percentageLabelSize            = Wh_GetIntSetting(L"customRendering.percentageLabelSize");
 
     PCWSTR percentageLabelMode = Wh_GetStringSetting(L"customRendering.percentageLabel");
     
-    if (wcscmp(percentageLabelMode, L"usedSpace") == 0)
-        g_percentageLabel = 1;
-    else if (wcscmp(percentageLabelMode, L"freeSpace") == 0)
-        g_percentageLabel = 2;
-    else
-        g_percentageLabel = 0;
+    if (wcscmp(percentageLabelMode, L"usedSpace") == 0) g_percentageLabel = 1;
+    else if (wcscmp(percentageLabelMode, L"freeSpace") == 0) g_percentageLabel = 2;
+    else g_percentageLabel = 0;
 
     Wh_FreeStringSetting(percentageLabelMode);
 
@@ -470,9 +476,8 @@ static void FillRoundedRect(
 
 
 static void DrawPercentageLabel(
-    HDC hdc, RECT &rect, int fontRefHeight, int percentage, COLORREF color
+    HDC hdc, RECT &rect, LPCWSTR fontFamily, int fontHeight, int percentage, COLORREF color
 ) {
-    int fontHeight = -(fontRefHeight * g_percentageLabelSize / 100);
     if (fontHeight == 0) return;
 
     Wh_Log(L"%d", fontHeight);
@@ -480,7 +485,7 @@ static void DrawPercentageLabel(
     HFONT font = CreateFontW(
         fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, 
-        DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+        DEFAULT_PITCH | FF_DONTCARE, fontFamily
     );
 
     if (!font) return;
@@ -537,7 +542,12 @@ HRESULT WINAPI HookedDrawThemeBackground(
         if (g_renderUsingVisualStyles && g_darkModeVSRendering && darkMode && g_darkHTheme) 
             hTheme = g_darkHTheme;
 
-        int barHeight = clipRect.bottom - clipRect.top;
+        RECT fullBarRect = { 
+            clipRect.left, clipRect.top, clipRect.left + g_barWidth, clipRect.bottom 
+        };
+
+        int maxBarHeight = clipRect.bottom - clipRect.top;
+        int percentageLabelFontHeight = -(maxBarHeight * g_percentageLabelSize / 100);
 
         if (!g_renderUsingVisualStyles) {
             int inset = (clipRect.bottom - clipRect.top) * (100 - g_heightFactor) / 200;
@@ -552,9 +562,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
             if (g_remainingSpaceAsProgress)
                 clipRect.right = clipRect.left + g_barWidth - progressWidth;
-
-            bool roundLeft = (clipRect.left <= g_barLeft);
-            bool roundRight = (clipRect.right >= g_barRight);
 
             if (g_renderUsingVisualStyles)
                 DrawThemeBackground_orig(
@@ -588,16 +595,23 @@ HRESULT WINAPI HookedDrawThemeBackground(
                     if (radius > 0) radius--;
                 }
 
-                FillRoundedRect(hdc, clipRect, radius, color, roundLeft, roundRight);
+                FillRoundedRect(
+                    hdc, clipRect, radius, color, true, g_roundProgressRightCorners
+                );
 
                 if (g_percentageLabel) {
-                    RECT fullBarRect = { g_barLeft, g_barTop, g_barRight, g_barBottom };
-                    
+                    LPCWSTR percentageLabelFont = L"Segoe UI Semibold";
+                    percentageLabelFont = Wh_GetStringSetting(L"customRendering.percentageLabelFont");
+
+                    Wh_Log(L"%s", percentageLabelFont);
+
                     DrawPercentageLabel(
-                        hdc, fullBarRect, barHeight, 
+                        hdc, fullBarRect, percentageLabelFont, percentageLabelFontHeight, 
                         (g_percentageLabel == 1) ? usedPercentage : (100 - usedPercentage),
                         (darkMode) ? g_percentageLabelColorDark : g_percentagelabelColorLight
                     );
+
+                    Wh_FreeStringSetting(percentageLabelFont);
                 }
             }
             
@@ -606,10 +620,6 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
         else if (iPartId == PP_TRANSPARENTBAR) {
             g_barWidth  = clipRect.right - clipRect.left;
-            g_barLeft   = clipRect.left;
-            g_barRight  = clipRect.right;
-            g_barTop    = clipRect.top;
-            g_barBottom = clipRect.bottom;
  
             if (g_renderUsingVisualStyles)
                 DrawThemeBackground_orig(hTheme, hdc, PP_TRANSPARENTBAR, PBS_NORMAL, &clipRect, 0);
@@ -618,13 +628,17 @@ HRESULT WINAPI HookedDrawThemeBackground(
 
                 if (g_renderBarBorder) {
                     FillRoundedRect(
-                        hdc, clipRect, radius, (darkMode) ? g_barBorderColorDark : g_barBorderColorLight, true, true
+                        hdc, clipRect, radius, (darkMode) ? g_barBorderColorDark : g_barBorderColorLight, 
+                        true, true
                     );
 
                     clipRect.top++; clipRect.left++; clipRect.bottom--; clipRect.right--;
                 }
 
-                FillRoundedRect(hdc, clipRect, radius, (darkMode) ? g_barColorDark : g_barColorLight, true, true);
+                FillRoundedRect(
+                    hdc, clipRect, radius, (darkMode) ? g_barColorDark : g_barColorLight, 
+                    true, true
+                );
             }
             
             return S_OK;
