@@ -1,7 +1,9 @@
 // ==WindhawkMod==
 // @id              disk-usage-bar-customizer
 // @name            Disk Usage Bar Customizer
+// @name:ro         Personalizator bară de utilizare discuri
 // @description     Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
+// @description:ro  Personalizează orice ține legătură de bara de utilizare a discurilor din secțiunea Acest PC din Explorer, inclusiv culori în funcție de temă, înălțime, bordură, colțuri rotunjite și mai multe.
 // @version         1.1.0
 // @author          Valer100
 // @github          https://github.com/Valer100
@@ -21,7 +23,7 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 ## Customization options
 ### General
 - Show remaining space as progress instead of used space
-- Custom warning percentage threshold
+- Custom warning & intermediate percentage thresholds
 
 ### Rendering
 - Render using visual styles
@@ -59,6 +61,9 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 ### Custom warning threshold
 ![Custom warning threshold](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_warning_threshold.png)
 
+### Custom indeterminate threshold
+![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/intermediate_progress_style.png)
+
 ### Show remaining space as progress instead of used space
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
 
@@ -76,123 +81,161 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 - general:
   - remainingSpaceAsProgress: false
     $name: Show remaining space as progress instead of used space
+    $name:ro: Afișează spațiul rămas ca progres în loc de spațiul utilizat
 
   - warningPercentageThreshold: 90
     $name: Warning percentage threshold
+    $name:ro: Prag în procente pentru avertizare
     $description: >-
-      Use the warning progress color when the warning percentage threshold (in percents) is reached (default: 90%).
+      Use the warning progress color/style when the warning threshold (in percents) is reached (default: 90%).
+    $description:ro: >-
+      Folosește culoarea/stilul de progres pentru avertizare atunci când pragul de avertizare (în procente) este atins (prestabilit: 90%).
+
+  - intermediatePercentageThreshold: 0
+    $name: Intermediate percentage threshold
+    $name:ro: Prag în procente intermediar
+    $description: >-
+      Use the intermediate progress color/style when the intermediate threshold (in percents) is reached. This threshold must be lower than the warning threshold for the intermediate state to be displayed. Setting this threshold to 0 will make the intermediate state not being displayed on the usage bar (default: 0%).
+    $description:ro: >-
+      Folosește culoarea de progres intermediară/stilul de progres intermediar atunci când pragul intermediar (în procente) este atins. Acest prag trebuie să fie mai mic decât pragul de avertizare pentru ca starea intermediară să fie afișată. Setarea acestui prag la 0 va face ca starea intermediară să nu fie afișată pe bara de utilizare (prestabilit: 0%).
 
   $name: General
+  $name:ro: General
 
 
 - rendering:
   - renderUsingVisualStyles: false
     $name: Render using visual styles
+    $name:ro: Randează folosind stiluri vizuale
     $description: >-
       Render the usage bar using the parts provided by the theme to match the system's appearance. You won't be able to customize the bar rendering if this option is enabled.
+    $description:ro: >-
+      Randează bara de utilizare folosind părțile furnizate de temă pentru a se potrivi cu aspectul sistemului. Nu vei putea personaliza randarea barei dacă această opțiune este activată.
 
   - darkModeVSRendering: true
     $name: Render using dark mode parts when using visual styles
+    $name:ro: Randează folosind părți întunecate atunci când se folosec stiluri vizuale
     $description: >-
       Render the usage bar using the dark mode parts from the "DarkMode_CopyEngine::Progress" class when dark mode is enabled. You must have Windows 11 build 26200.6899 or higher installed and the "Render using visual styles" option enabled for this to work.
+    $description:ro: >-
+      Randează bara de utilizare folosind părți întunecate din clasa "DarkMode_CopyEngine::Progress" atunci când modul întunecat este activat. Trebuie să ai instalat Windows 11, build-ul 26100.6899 sau mai recent și opțiunea "Randează folosind stiluri vizuale" activată pentru ca această opțiune să funcționeze.
 
   $name: Rendering
+  $name:ro: Randare
 
 
 - customRendering:
   - useSystemAccentColor: false
     $name: Use system's accent color for the normal progress color
-    $description: >-
-      Use system's accent color for the normal progress color.
+    $name:ro: Folosește culoarea de accent a sistemului pentru culoarea normală a progresului
 
   - renderBarBorder: true
     $name: Render bar border
+    $name:ro: Randează bordura barei
 
   - heightFactor: 100
     $name: Height factor
+    $name:ro: Factor de înălțime
     $description: >-
       A factor that determines the height of the usage bar (in percents; default: 100%). The factor cannot be greater than 100%.
+    $description:ro: >-
+      Un factor care determină înălțimea barei de utilizare (în procente; prestabilit: 100%). Factorul nu poate să fie mai mare de 100%.
 
   - cornerRadiusFactor: 0
     $name: Corner radius factor
+    $name:ro: Factor de rază al colțului
     $description: >-
-      A factor that determines how rounded the bar's corners are (in percents; default: 0%). 0% keeps square corners, 100% results in fully rounded, pill-shaped ends. The progress fill's leading edge stays square until the drive is completely full, matching how the bar's background rounds off.
+      A factor that determines how rounded the bar's corners are (in percents; default: 0%). The factor cannot be greater than 100%.
+    $description:ro: >-
+      Un factor care determină cât de rotunjite sunt colțurile barei (în procente; prestabilit: 0%). Factorul nu poate să fie mai mare de 100%.
 
   - percentageLabel: dontShow
     $name: Percentage label
+    $name:ro: Etichetă pentru procentaj
     $description: >-
-      Show a label indicating the percentage of used or free space.
+      Show a label on the usage bar indicating the percentage of used or free space.
+    $description:ro: >-
+      Afișează o etichetă pe bara de utilizare care indică procentul spațiului utilizat sau rămas.
     $options:
     - dontShow: Don't show
+    - dontShow:ro: Nu afișa
     - usedSpace: Show used space
+    - usedSpace:ro: Afișează spațiul utilizat
     - freeSpace: Show free space
+    - freeSpace:ro: Afișează spațiul rămas
 
   - percentageLabelFontSizeFactor: 70
     $name: Percentage label font size factor
+    $name:ro: Factor de dimensiune a fontului etichetei pentru procentaj
     $description: >-
-      Font size as a factor of the bar's height (in percents; default: 70%). This is independent of the "Height factor" setting, so the label stays legible even if the bar itself is shrunk thin.
+      Font size as a factor of the maximum bar's height (in percents; default: 70%). This is independent of the "Height factor" setting, so the label stays legible even if the bar's height is very thin.
+    $description:ro: >-
+      Dimensiunea fontului ca un factor al înălțimii maxime a barei (în procente; prestabilit: 70%). Această setare este independentă de setarea "Factor de înălțime" pentru ca eticheta să rămână lizibilă chiar și atunci când înălțimea barei este foarte subțire.
 
 
   - lightModeColors:
     - barColor: "#E6E6E6"
       $name: Bar color
-      $description: >-
-        Hex color code for the empty part of the bar (default: #E6E6E6).
+      $name:ro: Culoarea barei
       
     - barBorderColor: "#BCBCBC"
       $name: Bar border color
-      $description: >-
-        Hex color code for the bar's border (default: #BCBCBC). Not appliable when "Render bar border" is disabled.
+      $name:ro: Culoarea bordurii barei
       
     - progressColorNormal: "#0070CB"
       $name: Normal progress color
-      $description: >-
-        Hex color code for the normal disk usage bar progress (default: #0070CB). Not appliable when "Use system's accent color for the normal progress color" is enabled.
-      
+      $name:ro: Culoarea normală a progresului
+    
+    - progressColorIntermediate: "#9D5D00"
+      $name: Intermediate progress color
+      $name:ro: Culoarea intermediară a progresului
+
     - progressColorFull: "#C42B1C"
-      $name: Full/Warning progress color
-      $description: >-
-        Hex color code for the bar progress when a drive is nearly full (default: #C42B1C).
+      $name: Warning progress color
+      $name:ro: Culoarea de avertizare a progresului
 
     - percentageLabelColor: "#000000"
       $name: Percentage label color
-      $description: >-
-        Hex color code for the percentage label text in light mode (default: #000000). Only applies when "Show percentage label" is enabled.
-  
+      $name:ro: Culoarea etichetei pentru procentaj
+        
     $name: Light mode colors
+    $name:ro: Culori pentru modul luminos
   
   
   - darkModeColors:
     - barColor: "#383838"
       $name: Bar color
-      $description: >-
-        Hex color code for the empty part of the bar (default: #383838).
+      $name:ro: Culoarea barei
       
     - barBorderColor: "#646464"
       $name: Bar border color
-      $description: >-
-        Hex color code for the bar's border (default: #646464). Not appliable when "Render bar border" is disabled.
+      $name:ro: Culoarea bordurii barei
       
     - progressColorNormal: "#60CDFF"
       $name: Normal progress color
-      $description: >-
-        Hex color code for the normal disk usage bar progress (default: #60CDFF). Not appliable when "Use system's accent color for the normal progress color" is enabled.
+      $name:ro: Culoarea normală a progresului
+
+    - progressColorIntermediate: "#FCE100"
+      $name: Intermediate progress color
+      $name:ro: Culoarea intermediară a progresului
       
     - progressColorFull: "#FF3D53"
-      $name: Full/Warning progress color
-      $description: >-
-        Hex color code for the bar progress when a drive is nearly full (default: #FF3D53).
+      $name: Warning progress color
+      $name:ro: Culoarea de avertizare a progresului
 
     - percentageLabelColor: "#FFFFFF"
       $name: Percentage label color
-      $description: >-
-        Hex color code for the percentage label text in dark mode (default: #FFFFFF). Only applies when "Show percentage label" is enabled.
-  
+      $name:ro: Culoarea etichetei pentru procentaj
+      
     $name: Dark mode colors
+    $name:ro: Culori pentru modul întunecat
 
   $name: Custom rendering
+  $name:ro: Randare personalizată
   $description: >-
     These options will be ignored when the "Render using visual styles" option is enabled.
+  $description:ro: >-
+    Aceste opțiuni vor ignorate atunci când opțiunea "Randează folosind stiluri vizuale" este activată.
 */
 // ==/WindhawkModSettings==
 
@@ -219,34 +262,37 @@ static decltype(&DrawThemeBackground) DrawThemeBackground_orig = nullptr;
 
 
 // General
-static BOOL     g_remainingSpaceAsProgress  = FALSE;
-static INT      g_warningThreshold          = 90;
+static BOOL     g_remainingSpaceAsProgress       = FALSE;
+static INT      g_warningThreshold               = 90;
+static INT      g_intermediateThreshold          = 0;
 
 // Rendering
-static BOOL     g_renderUsingVisualStyles   = FALSE;
-static BOOL     g_darkModeVSRendering       = TRUE;
+static BOOL     g_renderUsingVisualStyles        = FALSE;
+static BOOL     g_darkModeVSRendering            = TRUE;
 
 // Custom rendering
-static BOOL     g_useSystemAccentColor      = FALSE;
-static BOOL     g_renderBarBorder           = TRUE;
-static INT      g_heightFactor              = 100;
-static INT      g_cornerRadiusFactor        = 0;
-static INT      g_percentageLabel           = 0;
-static INT      g_percentageLabelSize       = 70;
+static BOOL     g_useSystemAccentColor           = FALSE;
+static BOOL     g_renderBarBorder                = TRUE;
+static INT      g_heightFactor                   = 100;
+static INT      g_cornerRadiusFactor             = 0;
+static INT      g_percentageLabel                = 0;
+static INT      g_percentageLabelSize            = 70;
 
 // Light mode colors
-static COLORREF g_barColorLight             = 0x00E6E6E6;
-static COLORREF g_barBorderColorLight       = 0x00BCBCBC;
-static COLORREF g_progressColorNormalLight  = 0x00CB7000;
-static COLORREF g_progressColorFullLight    = 0x001C2BC4;
-static COLORREF g_percentagelabelColorLight = 0x00000000;
+static COLORREF g_barColorLight                  = 0x00E6E6E6;
+static COLORREF g_barBorderColorLight            = 0x00BCBCBC;
+static COLORREF g_progressColorNormalLight       = 0x00CB7000;
+static COLORREF g_progressColorIntermediateLight = 0x00005D9D;
+static COLORREF g_progressColorFullLight         = 0x001C2BC4;
+static COLORREF g_percentagelabelColorLight      = 0x00000000;
 
 // Dark mode colors
-static COLORREF g_barColorDark              = 0x00383838;
-static COLORREF g_barBorderColorDark        = 0x00646464;
-static COLORREF g_progressColorNormalDark   = 0x00FFCD60;
-static COLORREF g_progressColorFullDark     = 0x00533DFF;
-static COLORREF g_percentageLabelColorDark  = 0x00FFFFFF;
+static COLORREF g_barColorDark                   = 0x00383838;
+static COLORREF g_barBorderColorDark             = 0x00646464;
+static COLORREF g_progressColorNormalDark        = 0x00FFCD60;
+static COLORREF g_progressColorIntermediateDark  = 0x0000E1FC;
+static COLORREF g_progressColorFullDark          = 0x00533DFF;
+static COLORREF g_percentageLabelColorDark       = 0x00FFFFFF;
 
 // Other
 thread_local int g_barWidth  = 1;
@@ -298,19 +344,20 @@ static COLORREF LoadColorSetting(PCWSTR colorName, COLORREF fallback) {
 
 static void LoadSettings() {
     // General
-    g_remainingSpaceAsProgress = Wh_GetIntSetting(L"general.remainingSpaceAsProgress");
-    g_warningThreshold         = Wh_GetIntSetting(L"general.warningPercentageThreshold");
+    g_remainingSpaceAsProgress       = Wh_GetIntSetting(L"general.remainingSpaceAsProgress");
+    g_warningThreshold               = Wh_GetIntSetting(L"general.warningPercentageThreshold");
+    g_intermediateThreshold          = Wh_GetIntSetting(L"general.intermediatePercentageThreshold");
 
     // Rendering
-    g_renderUsingVisualStyles  = Wh_GetIntSetting(L"rendering.renderUsingVisualStyles");
-    g_darkModeVSRendering      = Wh_GetIntSetting(L"rendering.darkModeVSRendering");
+    g_renderUsingVisualStyles        = Wh_GetIntSetting(L"rendering.renderUsingVisualStyles");
+    g_darkModeVSRendering            = Wh_GetIntSetting(L"rendering.darkModeVSRendering");
 
     // Custom rendering
-    g_useSystemAccentColor     = Wh_GetIntSetting(L"customRendering.useSystemAccentColor");
-    g_renderBarBorder          = Wh_GetIntSetting(L"customRendering.renderBarBorder");
-    g_heightFactor             = Wh_GetIntSetting(L"customRendering.heightFactor");
-    g_cornerRadiusFactor       = Wh_GetIntSetting(L"customRendering.cornerRadiusFactor");
-    g_percentageLabelSize      = Wh_GetIntSetting(L"customRendering.percentageLabelFontSizeFactor");
+    g_useSystemAccentColor           = Wh_GetIntSetting(L"customRendering.useSystemAccentColor");
+    g_renderBarBorder                = Wh_GetIntSetting(L"customRendering.renderBarBorder");
+    g_heightFactor                   = Wh_GetIntSetting(L"customRendering.heightFactor");
+    g_cornerRadiusFactor             = Wh_GetIntSetting(L"customRendering.cornerRadiusFactor");
+    g_percentageLabelSize            = Wh_GetIntSetting(L"customRendering.percentageLabelFontSizeFactor");
 
     PCWSTR percentageLabelMode = Wh_GetStringSetting(L"customRendering.percentageLabel");
     
@@ -333,18 +380,20 @@ static void LoadSettings() {
     else if (g_percentageLabelSize < 1) g_percentageLabelSize = 1;
 
     // Light mode colors
-    g_barColorLight             = LoadColorSetting(L"customRendering.lightModeColors.barColor",             0x00E6E6E6);
-    g_barBorderColorLight       = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",       0x00BCBCBC);
-    g_progressColorNormalLight  = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal",  0x00CB7000);
-    g_progressColorFullLight    = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",    0x001C2BC4);
-    g_percentagelabelColorLight = LoadColorSetting(L"customRendering.lightModeColors.percentageLabelColor", 0x00000000);
+    g_barColorLight                  = LoadColorSetting(L"customRendering.lightModeColors.barColor",                  0x00E6E6E6);
+    g_barBorderColorLight            = LoadColorSetting(L"customRendering.lightModeColors.barBorderColor",            0x00BCBCBC);
+    g_progressColorNormalLight       = LoadColorSetting(L"customRendering.lightModeColors.progressColorNormal",       0x00CB7000);
+    g_progressColorIntermediateLight = LoadColorSetting(L"customRendering.lightModeColors.progressColorIntermediate", 0x00005D9D);
+    g_progressColorFullLight         = LoadColorSetting(L"customRendering.lightModeColors.progressColorFull",         0x001C2BC4);
+    g_percentagelabelColorLight      = LoadColorSetting(L"customRendering.lightModeColors.percentageLabelColor",      0x00000000);
 
     // Dark mode colors
-    g_barColorDark              = LoadColorSetting(L"customRendering.darkModeColors.barColor",               0x00383838);
-    g_barBorderColorDark        = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",         0x00646464);
-    g_progressColorNormalDark   = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",    0x00FFCD60);
-    g_progressColorFullDark     = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",      0x00533DFF);
-    g_percentageLabelColorDark  = LoadColorSetting(L"customRendering.darkModeColors.percentageLabelColor",   0x00FFFFFF);
+    g_barColorDark                   = LoadColorSetting(L"customRendering.darkModeColors.barColor",                   0x00383838);
+    g_barBorderColorDark             = LoadColorSetting(L"customRendering.darkModeColors.barBorderColor",             0x00646464);
+    g_progressColorNormalDark        = LoadColorSetting(L"customRendering.darkModeColors.progressColorNormal",        0x00FFCD60);
+    g_progressColorIntermediateDark  = LoadColorSetting(L"customRendering.darkModeColors.progressColorIntermediate",  0x0000E1FC);
+    g_progressColorFullDark          = LoadColorSetting(L"customRendering.darkModeColors.progressColorFull",          0x00533DFF);
+    g_percentageLabelColorDark       = LoadColorSetting(L"customRendering.darkModeColors.percentageLabelColor",       0x00FFFFFF);
 }
 
 
@@ -425,6 +474,8 @@ static void DrawPercentageLabel(
 ) {
     int fontHeight = -(fontRefHeight * g_percentageLabelSize / 100);
     if (fontHeight == 0) return;
+
+    Wh_Log(L"%d", fontHeight);
 
     HFONT font = CreateFontW(
         fontHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
@@ -514,6 +565,8 @@ HRESULT WINAPI HookedDrawThemeBackground(
                 if (iStateId == PBFS_ERROR || iStateId == PBFS_PARTIAL) 
                     if (usedPercentage >= g_warningThreshold) {
                         color = (darkMode) ? g_progressColorFullDark : g_progressColorFullLight;
+                    } else if (g_intermediateThreshold && usedPercentage >= g_intermediateThreshold) {
+                        color = (darkMode) ? g_progressColorIntermediateDark : g_progressColorIntermediateLight;
                     } else {
                         if (g_useSystemAccentColor)
                             if (IsWindows10OrGreater())
