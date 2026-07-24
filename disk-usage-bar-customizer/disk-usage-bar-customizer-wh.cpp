@@ -437,10 +437,10 @@ static void DrawPercentageLabel(
     WCHAR text[16];
     swprintf(text, 16, L"%d%%", percentage);
 
+    SelectObject(hdc, font);
     SetTextColor(hdc, color);
     DrawTextW(hdc, text, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
 
-    SelectObject(hdc, font);
     DeleteObject(font);
 }
 
