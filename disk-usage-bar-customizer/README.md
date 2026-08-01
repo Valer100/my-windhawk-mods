@@ -1,13 +1,15 @@
 # Disk Usage Bar Customizer
-Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border and more.
+Customize everything about the disk usage bar from the This PC section in the File Explorer, including theme-aware colors, height, border, rounded corners and more.
 
 This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/disk-usage-bar-color) mod made by [dirtyrazkl](https://github.com/dirtyrazkl).
+
+**Warning:** This mod is not compatible with StartAllBack.
 
 
 ## Customization options
 ### General
 - Show remaining space as progress instead of used space
-- Custom warning percentage threshold
+- Custom warning & intermediate percentage thresholds
 
 ### Rendering
 - Render using visual styles
@@ -17,6 +19,8 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 - Use system's accent color for the normal progress color
 - Render bar border
 - Height factor
+- Corner radius 
+- Percentage label overlay 
 - Custom light & dark mode colors
 
 
@@ -43,5 +47,14 @@ This is a fork of the original [Disk Usage Bar Color](https://windhawk.net/mods/
 ### Custom warning threshold
 ![Custom warning threshold](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/custom_warning_threshold.png)
 
+### Custom intermediate threshold
+![Custom intermediate threshold](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/intermediate_progress_style.png)
+
 ### Show remaining space as progress instead of used space
 ![Show remaining space as progress instead of used space](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/remaining_space_as_progress.png)
+
+### Rounded corners
+![Rounded corners](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/rounded_corners.png)
+
+### Percentage overlay
+![Percentage overlay](https://raw.githubusercontent.com/Valer100/my-windhawk-mods/refs/heads/main/disk-usage-bar-customizer/screenshots/percentage_overlay.png)
