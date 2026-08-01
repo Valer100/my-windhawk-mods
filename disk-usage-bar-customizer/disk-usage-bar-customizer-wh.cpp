@@ -492,8 +492,6 @@ static void DrawPercentageLabel(
     COLORREF oldColor = SetTextColor(hdc, color);
     int oldBkMode = SetBkMode(hdc, TRANSPARENT);
     
-    SelectObject(hdc, font);
-    SetTextColor(hdc, color);
     DrawTextW(hdc, text, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
 
     SetBkMode(hdc, oldBkMode);
